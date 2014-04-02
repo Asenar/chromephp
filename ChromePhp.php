@@ -47,6 +47,11 @@ class ChromePhp
     /**
      * @var string
      */
+    const BACKTRACE_FORMAT = 'backtrace_format';
+
+    /**
+     * @var string
+     */
     const BASE_PATH = 'base_path';
 
     /**
@@ -117,8 +122,9 @@ class ChromePhp
      * @var array
      */
     protected $_settings = array(
-        self::BACKTRACE_LEVEL => 1,
-        self::BASE_PATH       => ''
+        self::BACKTRACE_LEVEL  => 1,
+        self::BACKTRACE_FORMAT => '{function_full:30} {file} : {line}',
+        self::BASE_PATH        => ''
     );
 
     /**
@@ -239,6 +245,27 @@ class ChromePhp
         }
     }
 
+    public static function trace()
+    {
+        $logger = self::getInstance();
+
+        $backtrace = debug_backtrace(false);
+        $level = $logger->getSetting(self::BACKTRACE_LEVEL);
+        $basepath = $logger->getSetting(self::BASE_PATH);
+
+        $logger->_addRow(array('ChromePhp.trace()'), null, self::LOG_TYPE_GROUP);
+
+        for ($i = $level - 1, $l = count($backtrace); $i < $l; $i++)
+        {
+            $backtrace_message = isset($backtrace[$i]) ? $logger->_formatBacktrace($backtrace[$i]) : 'unknown';
+            $logger->_addRow(array(), $backtrace_message, self::LOG_TYPE_LOG, false);
+        }
+
+        $logger->_addRow(array(), null, self::LOG_TYPE_GROUP_END);
+
+        return $logger;
+    }
+
     /**
      * internal logging call
      *
@@ -274,22 +301,38 @@ class ChromePhp
 
         $backtrace = debug_backtrace(false);
         $level = $logger->getSetting(self::BACKTRACE_LEVEL);
-        $basepath = $logger->getSetting(self::BASE_PATH);
 
-        $backtrace_message = 'unknown';
-        if (isset($backtrace[$level]['file'], $backtrace[$level]['line'])) {
-            $file = $backtrace[$level]['file'];
-
-            if ($basepath && strpos($file, $basepath) === 0) {
-                $file = substr($file, strlen($basepath));
-            }
-
-            $backtrace_message = $file . ' : ' . $backtrace[$level]['line'];
-        }
+        $backtrace_message = isset($backtrace[$level]) ? $logger->_formatBacktrace($backtrace[$level]) : 'unknown';
 
         $logger->_addRow($logs, $backtrace_message, $type);
 
         return $logger;
+    }
+
+    protected function _formatBacktrace($values)
+    {
+        $default = array('function' => '', 'line' => '', 'file' => '', 'class' => '', 'type' => '');
+        $values = array_merge($default, $values);
+        $values['function_full'] = $values['type'] ? $values['class'] . $values['type'] . $values['function'] : $values['function'];
+        $values['file_full'] = $values['file'];
+
+        $format = $this->getSetting(self::BACKTRACE_FORMAT);
+        $basepath = $this->getSetting(self::BASE_PATH);
+
+        if ($basepath && strpos($values['file'], $basepath) === 0) {
+            $values['file'] = substr($values['file'], strlen($basepath));
+        }
+
+        $this->values = $values;
+        $fn = array($this, '_formatBacktraceCallback');
+
+        return preg_replace_callback('/{(\w+)?(:(\d+))?}/', $fn, $format);
+    }
+
+    protected function _formatBacktraceCallback($matches)
+    {
+        $s = isset($this->values[$matches[1]]) ? $this->values[$matches[1]] : "";
+        return isset($matches[3]) ? str_pad($s, (int) $matches[3], " ", STR_PAD_RIGHT) : $s;
     }
 
     /**
@@ -384,10 +427,10 @@ class ChromePhp
      * @var mixed
      * @return void
      */
-    protected function _addRow(array $logs, $backtrace, $type)
+    protected function _addRow(array $logs, $backtrace, $type, $uniqueBacktrace = true)
     {
         // if this is logged on the same line for example in a loop, set it to null to save space
-        if (in_array($backtrace, $this->_backtraces)) {
+        if ($uniqueBacktrace && in_array($backtrace, $this->_backtraces)) {
             $backtrace = null;
         }
 
