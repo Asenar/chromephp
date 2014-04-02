@@ -117,7 +117,18 @@ class ChromePhp
      * @var array
      */
     protected $_settings = array(
-        self::BACKTRACE_LEVEL => 1
+        self::BACKTRACE_LEVEL => 1,
+        self::BASE_PATH       => ''
+    );
+
+    /**
+     * Never print a backtrace for these log types
+     * @var array
+     */
+    protected $_no_backtrace = array(
+        self::LOG_TYPE_GROUP,
+        self::LOG_TYPE_GROUP_END,
+        self::LOG_TYPE_GROUP_COLLAPSED
     );
 
     /**
@@ -216,7 +227,16 @@ class ChromePhp
      */
     public function __call($name, $args)
     {
-        return forward_static_call_array(array(self, $name), $args);
+        $const = 'self::LOG_TYPE_' . self::_fromCamelCase($name);
+
+        if (defined($const))
+        {
+            return self::_log(constant($const), $args);
+        }
+        else
+        {
+            return self::getInstance();
+        }
     }
 
     /**
@@ -373,7 +393,7 @@ class ChromePhp
 
         // for group, groupEnd, and groupCollapsed
         // take out the backtrace since it is not useful
-        if (in_array($type, array(self::LOG_TYPE_GROUP, self::LOG_TYPE_GROUP_END, self::LOG_TYPE_GROUP_COLLAPSED))) {
+        if (in_array($type, $this->_no_backtrace)) {
             $backtrace = null;
         }
 
@@ -381,9 +401,7 @@ class ChromePhp
             $this->_backtraces[] = $backtrace;
         }
 
-        $row = array($logs, $backtrace, $type);
-
-        $this->_json['rows'][] = $row;
+        $this->_json['rows'][] = array($logs, $backtrace, $type);
         $this->_writeHeader($this->_json);
     }
 
@@ -470,10 +488,7 @@ class ChromePhp
      */
     public function getSetting($key)
     {
-        if (!isset($this->_settings[$key])) {
-            return null;
-        }
-        return $this->_settings[$key];
+        return isset($this->_settings[$key]) ? $this->_settings[$key] : null;
     }
 }
 
