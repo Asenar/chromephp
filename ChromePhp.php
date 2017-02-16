@@ -412,7 +412,7 @@ class ChromePhp
      * @param  string $input A string in CamelCase
      * @return string
      */
-    function _fromCamelCase($input) {
+    static function _fromCamelCase($input) {
         preg_match_all('!([A-Z][A-Z0-9]*(?=$|[A-Z][a-z0-9])|[A-Za-z][a-z0-9]+)!', $input, $matches);
         return implode('_', array_map('strtoupper', $matches[0]));
     }
