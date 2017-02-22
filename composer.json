@@ -1,9 +1,9 @@
 {
-    "name": "ccampbell/chromephp",
+    "name": "asenar/chromephp",
     "type": "library",
     "description": "Log variables to the Chrome console (via Chrome Logger Google Chrome extension).",
     "keywords": ["log","logging"],
-    "homepage": "http://github.com/ccampbell/chromephp",
+    "homepage": "http://github.com/asenar/chromephp",
     "license": "Apache-2.0",
     "authors": [
         {
