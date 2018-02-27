@@ -20,7 +20,8 @@ For Google Chrome the Chrome Logger extension is needed.
 
 ## Installation Firefox
 1. Put ChromePhp.php somewhere in your PHP include path
-2. Enable Server logging filter in the web console
+2. Enable Server logging filter in the web console. If Server logging filter is not present (likely from FF 57 on), disable devtools.webconsole.new-frontend-enabled in about:config 
+or install the Firefox extension from https://addons.mozilla.org/en-US/firefox/addon/chromelogger/ to log to the new console
 3. Initialize ChromePhp for FirePHP compatibility
 
     ```php
@@ -49,3 +50,24 @@ More information can be found here:
 http://www.chromelogger.com
 
 https://developer.mozilla.org/en-US/docs/Tools/Web_Console/Console_messages#Server
+
+## Use this repository with composer
+
+To use this repository, change your composer.json to add `ccampbell/chromephp`
+in require-dev and add this in your repository list. For example:
+
+```
+"require-dev": {
+    "ccampbell/chromephp" : "dev-master"
+},
+
+"repositories": [
+    {
+        "type" : "vcs",
+        "url"  : "git@github.com:ErikKrause/chromephp.git"
+    }
+]
+
+```
+
+
